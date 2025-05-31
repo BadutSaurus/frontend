@@ -1,5 +1,6 @@
 <template>
   <div class="container mx-auto">
+    {{ product_formData }}
     <div class="flex flex-col gap-4">
       <h1 class="text-2xl font-bold">Products Detail</h1>
       <h2 class="text-xl font-semibold">Product Information</h2>
@@ -314,12 +315,14 @@ const handleImageUpload = event => {
 };
 
 const handleCreateProduct = async () => {
+  product_formValidations.value.$touch();
+  if (product_formValidations.value.$invalid) return;
   try {
     await createProduct(product_formData);
+    clearForm();
+    product_formValidations.value.$reset();
   } catch (error) {
     console.error(error);
-  } finally {
-    clearForm();
   }
 };
 
@@ -371,15 +374,6 @@ const confirmLeave = () => {
   }
 };
 
-// const loadProduct = async () => {
-//   try {
-//     const response = await getProductByID();
-//     products.value = response;
-//   } catch (error) {
-//     console.error('Failed to load products:', error);
-//   }
-// };
-
 const loadCategories = async () => {
   try {
     const response = await getAllCategories();
@@ -391,7 +385,6 @@ const loadCategories = async () => {
 
 onMounted(async () => {
   loadCategories();
-  // loadProduct();
 });
 
 const cancelLeave = () => {

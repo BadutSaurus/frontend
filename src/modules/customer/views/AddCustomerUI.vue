@@ -131,7 +131,6 @@
           >
             <PrimeVueInputText
               v-model="customer_FormData.number"
-              :loading="authenticationSignUp_isLoading"
               placeholder="Input your phone number"
               class="text-sm w-full"
               :class="{ ...classes }"
@@ -232,7 +231,7 @@
           variant="outlined"
           class="w-48 text-primary border-primary"
         ></PrimeVueButton>
-        <PrimeVueButton type="submit" label="Add Customer" class="w-48 bg-primary border-primary"></PrimeVueButton>
+      <PrimeVueButton type="submit" label="Add Customer" class="w-48 bg-primary border-primary"></PrimeVueButton>
       </div>
     </form>
   </div>
@@ -243,10 +242,8 @@ import CustomerTags from '@/modules/customer/components/addCustomer/tags.vue';
 import { useCustomerService } from '../services/CustomersService';
 const { customer_FormData, customer_formValidations } = useCustomerService();
 
-const handleCreateCustomer = valid => {
-  if (valid) {
-    console.log(customer_FormData);
-  }
+const handleCreateCustomer = () => {
+  console.log(customer_FormData);
 };
 </script>
 

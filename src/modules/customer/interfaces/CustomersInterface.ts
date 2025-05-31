@@ -1,11 +1,12 @@
 export interface ICustomer {
   id: string;
   name: string;
-  email: string;
   code: string;
-  number?: string;
-  points?: number; //number
-  latestVisit?: string; //date
+  number: string;
+  dob: string;
+  email: string;
+  username: string;
+  address: string;
 }
 
 export interface ICustomerFormData {
@@ -18,4 +19,18 @@ export interface ICustomerFormData {
   id: string;
   tags: string[];
   address: string;
+}
+
+export interface ICreateCustomerPayload {
+  name: string;
+  code: string;
+  number: string;
+  dob: string;
+  email: string;
+  address: string;
+  customers_has_tag: [
+    {
+      id: string;
+    },
+  ];
 }

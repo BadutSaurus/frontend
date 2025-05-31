@@ -26,11 +26,11 @@ export interface IProduct {
   id: string;
   name: string;
   price: number;
-  discount_price?: number;
+  discountPrice?: number;
   discount_value?: number;
   picture_url?: string;
-  categories?: ICategoryHasProduct[];
-  variants?: IVariantHasProduct[];
+  categoriesHasProducts?: ICategoryHasProduct[];
+  variantHasProducts?: IVariantHasProduct[];
 }
 
 export interface CreateProductPayload {
@@ -46,3 +46,4 @@ export interface CreateProductPayload {
   categories: object[];
   variants?: object[];
 }
+

@@ -42,19 +42,24 @@ export const useProductService = () => {
     $autoDirty: true,
   });
 
-  const getAllProducts = async (): Promise<IProduct[]> => {
-    const response = await axios.get(API_URL);
-    const products: IProduct[] = response.data.data;
-
-    return products.map(item => ({
+  const getAllProducts = async (page: number, limit: number, search: string): Promise<IProduct[]> => {
+    const response = await axios.get(`${API_URL}/?page=${page}&limit=${limit}&search=${search}`);
+    const products: IProduct[] = response.data.data.data.map((item: IProduct) => ({
       id: item.id,
       name: item.name,
       price: item.price,
-      discount_price: item.discount_price || 0,
+      discount_price: item.discountPrice || 0,
       picture_url: item.picture_url || '-',
-      categories: item.categories_has_products?.map((item: ICategoryHasProduct) => item.categories.category),
-      variants: item.variant_has_products?.map((item: IVariantHasProduct) => item.variant.name),
+      categories: item.categoriesHasProducts?.map((cat: ICategoryHasProduct) => cat.categories.category),
+      variants: item.variantHasProducts?.map((variant: IVariantHasProduct) => variant.variant.name),
     }));
+
+    const total = response.data.data.total;
+
+    return {
+      products,
+      total,
+    };
   };
 
   const getProductById = async (id: string): Promise<IProduct> => {
@@ -65,7 +70,8 @@ export const useProductService = () => {
       id: product.id,
       name: product.name,
       price: product.price,
-      discount_value: product.discount_price || 0,
+      discount_price: product.discount_price || 0,
+      is_percent: product.is_percent,
       picture_url: product.picture_url || '-',
       categories: product.categories_has_products.map((item: ICategoryHasProduct) => item.categories) || [],
       variants: product.variant_has_products?.map((item: IVariantHasProduct) => item.variant) || [],

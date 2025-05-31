@@ -287,7 +287,7 @@ const { getProductById, updateProduct, product_formData, product_formValidations
 function clearForm() {
   product_formData.name = '';
   product_formData.price = 0;
-  product_formData.isDiscount = false;
+  product_formData.isDiscount = true;
   product_formData.discount_value = 0;
   product_formData.discount_unit = 'Rp';
   product_formData.discount_price = 0;
@@ -297,6 +297,7 @@ function clearForm() {
 
 const toggleVariant = ref(false);
 const categories = ref([]);
+const productID = ref(route.params.id);
 const loadCategories = async () => {
   try {
     const response = await getAllCategories();
@@ -307,18 +308,22 @@ const loadCategories = async () => {
 };
 const loadProduct = async () => {
   try {
-    loadCategories();
     const response = await getProductById(route.params.id);
     console.log('🚀 ~ loadProduct ~ getProductById:', response);
     product_formData.name = response.name;
     product_formData.price = response.price;
-    product_formData.isDiscount = response.isDiscount;
-    product_formData.discount_value = response.discount_price;
-    product_formData.discount_unit = response.discount_unit;
     product_formData.discount_price = response.discount_price;
+    product_formData.isDiscount = response.discount_price > 0;
     product_formData.variants = response.variants;
     product_formData.categories = response.categories;
 
+    if (response.is_percentage) {
+      product_formData.discount_value = (response.discount_price / response.price) * 100;
+    } else {
+      product_formData.discount_value = response.price - response.discount_price;
+    }
+
+    product_formData.discount_unit = response.is_percentage ? '%' : 'Rp';
     if (response.variants.length > 0) {
       toggleVariant.value = true;
     }
@@ -347,7 +352,7 @@ const handleImageUpload = event => {
 
 const handleUpdateProduct = async () => {
   try {
-    await updateProduct(product_formData);
+    await updateProduct(productID, product_formData);
   } catch (error) {
     console.error(error);
   } finally {
@@ -399,8 +404,8 @@ const confirmLeave = () => {
   }
 };
 
-
 onMounted(async () => {
+  loadCategories();
   loadProduct();
 });
 

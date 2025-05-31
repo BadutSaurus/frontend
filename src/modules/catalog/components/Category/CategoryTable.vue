@@ -240,10 +240,8 @@ const loadCategories = async () => {
   }
 };
 const handleAddCategory = async () => {
-  if (!category_formData.name.trim()) {
-    // alert('ICategory name is required!');
-    return;
-  }
+  
+
 
   try {
     const newCategory = await createCategory({

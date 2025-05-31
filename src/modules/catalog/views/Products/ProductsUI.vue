@@ -5,11 +5,14 @@
       <PrimeVueDataTable
         v-model:selection="selectedProducts"
         :value="products"
-        :rows="10"
+        :rows="limit"
         :filters="filters"
+        :first="(page - 1) * limit"
+        :total-records="total"
         data-key="ID"
         paginator
         :loading="loading"
+        @page="onPageChange"
       >
         <template #header>
           <div class="flex justify-between">
@@ -21,7 +24,8 @@
                 <PrimeVueInputIcon>
                   <i class="pi pi-search" />
                 </PrimeVueInputIcon>
-                <PrimeVueInputText v-model="filters['global'].value" placeholder="Keyword Search" />
+                <!-- <PrimeVueInputText v-model="filters['global'].value" placeholder="Keyword Search" /> -->
+                <PrimeVueInputText v-model="search" placeholder="Keyword Search" />
               </PrimeVueIconField>
 
               <router-link to="/catalog/products/add-product">
@@ -82,21 +86,33 @@
               variant="text"
               label="Previous"
               class="border border-primary text-primary hover:bg-transparent"
-              @click="prevPageCallback"
+              @click="
+                () => {
+                  page--;
+                  loadProducts();
+                }
+              "
             />
 
+            <!-- Page Numbers -->
             <div>
+              {{ pageCount }}
               <PrimeVueButton
                 v-for="p in pageCount"
                 :key="p"
                 :label="p.toString()"
                 class="border-none aspect-square p-4"
                 :class="
-                  page === p - 1 ? 'bg-blue-secondary-background text-primary' : 'bg-transparent text-grayscale-20'
+                  page === p ? 'bg-blue-secondary-background text-primary' : 'bg-transparent text-grayscale-20'
+                "
+                @click="
+                  () => {
+                    page = p;
+                    loadProducts();
+                  }
                 "
               />
             </div>
-            <!-- Page Numbers -->
 
             <!-- Next Page Button -->
             <PrimeVueButton
@@ -104,7 +120,12 @@
               variant="text"
               label="Next"
               class="border border-primary text-primary hover:bg-transparent flex-row-reverse"
-              @click="nextPageCallback"
+              @click="
+                () => {
+                  page++;
+                  loadProducts();
+                }
+              "
             />
           </div>
         </template>
@@ -168,9 +189,15 @@ import ProductVariantPill from '../../components/ProductVariantPill.vue';
 import { useProductService } from '@/modules/catalog/services/Product/ProductServices';
 import CategoryPill from '@/modules/catalog/components/Category/CategoryPill.vue';
 
+const route = useRoute();
 const router = useRouter();
 
 const { getAllProducts, deleteProduct } = useProductService();
+
+const page = ref(parseInt(route.query.page) || 1);
+const limit = ref(5);
+const search = ref('');
+const total = ref(1);
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' })
@@ -206,8 +233,12 @@ const products = ref([]);
 const loadProducts = async () => {
   loading.value = true;
   try {
-    products.value = await getAllProducts();
-    // console.log('products', products.value);
+    const response = await getAllProducts(page.value, limit.value, search.value);
+    products.value = response.products;
+    total.value = response.total;
+    console.log('🚀 ~ loadProducts ~ total.value:', total.value);
+    console.log('🚀 ~ loadProducts ~ page.value:', page.value);
+    console.log('products', products.value);
   } catch (err) {
     console.error('Failed to fetch products:', err);
   } finally {
@@ -226,7 +257,16 @@ const handleDelete = async () => {
   }
 };
 
+const onPageChange = (event) => {
+  page.value = event.page + 1; // event.page is 0-based
+  loadProducts();
+};
+
 onMounted(() => {
+  if(!route.query.page) {
+    router.push({ query: { page: '1' } });
+  }
+  page.value = parseInt(route.query.pages) || 2;  
   loadProducts();
 });
 </script>

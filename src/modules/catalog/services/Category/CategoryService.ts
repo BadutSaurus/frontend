@@ -36,12 +36,17 @@ export const useCategoryService = () => {
     }));
   };
   const createCategory = async (payload: CategoryPayload): Promise<unknown> => {
+
+    category_formValidations.value.$touch();
+    if(category_formValidations.value.$invalid) return;
+    
     const response = await axios.post(API_URL, payload);
     const message = response.data.message || 'Successfully created a category.';
-    if (response.data.statusCode !== 201) return {
-      message,
-      statusCode: response.data.statusCode,
-    };
+    if (response.data.statusCode !== 201)
+      return {
+        message,
+        statusCode: response.data.statusCode,
+      };
     const data: ICategory = response.data.data;
     return {
       id: data.id,
@@ -51,6 +56,8 @@ export const useCategoryService = () => {
     };
   };
   const updateCategory = async (id: string, payload: CategoryPayload): Promise<ICategory> => {
+    category_formValidations.value.$touch();
+
     const response = await axios.patch(`${API_URL}/${id}`, payload);
     const data: ICategory = response.data.data;
 
