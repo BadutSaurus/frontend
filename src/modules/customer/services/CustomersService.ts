@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ICustomer, ICustomerFormData } from '../interfaces/CustomersInterface';
+import { ICustomer, ICustomerFormData,ICustomerResponse } from '../interfaces/CustomersInterface';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api/customers`;
 
@@ -35,12 +35,9 @@ export const useCustomerService = () => {
     $autoDirty: true,
   });
 
-  const getAllCustomers = async (): Promise<ICustomer[]> => {
-    const response = await axios.get(API_URL);
-    const customers: ICustomer[] = response.data.data.data;
-    console.log('🚀 ~ getAllCustomers ~ customers:', customers);
-
-    return customers.map((item: ICustomer) => ({
+  const getAllCustomers = async (page: number, limit: number, search: string): Promise<ICustomerResponse> => {
+    const response = await axios.get(`${API_URL}?page=${page}&limit=${limit}&search=${search}`);
+    const customers: ICustomer[] = response.data.data.data.map((item: ICustomer) => ({
       id: item.id,
       name: item.name,
       email: item.email,
@@ -52,10 +49,16 @@ export const useCustomerService = () => {
       username: item.username,
       address: item.address,
       dob: item.dob,
-    }));
+    }));;
+    console.log('🚀 ~ getAllCustomers ~ customers:', customers);
+
+    return {
+      customers,
+      lastPage: response.data.data.lastPage,
+    }
   };
 
-  const createCustomer = async (payload: { name: string; email: string; phone?: string }): Promise<ICustomer> => {
+  const createCustomer = async (payload: ICustomerFormData): Promise<ICustomer> => {
     const response = await axios.post(API_URL, payload);
     const data: ICustomer = response.data.data;
     return {
@@ -69,9 +72,15 @@ export const useCustomerService = () => {
     };
   };
 
+  const deleteCustomer = async (id: string): Promise<void> => {
+    const response = await axios.delete(`${API_URL}/${id}`);
+    return response.data.data;
+  };
+
   return {
     getAllCustomers,
     createCustomer,
+    deleteCustomer,
     customer_FormData,
     customer_formValidations,
   };

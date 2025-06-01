@@ -23,6 +23,10 @@ export interface ICustomer {
   customersHasTag: ICustomersHasTag[];
 }
 
+export interface ICustomerResponse {
+  customers: ICustomer[];
+  lastPage: number;
+}
 
 export interface ICustomerFormData {
   name: string;
