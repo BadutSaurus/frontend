@@ -5,6 +5,7 @@ import {
   IProduct,
   ICategoryHasProduct,
   IVariantHasProduct,
+  IProductResponse,
 } from '@/modules/catalog/interfaces/Product/ProductInterface.ts';
 
 import useVuelidate from '@vuelidate/core';
@@ -20,7 +21,7 @@ export const useProductService = () => {
     price: 0,
     isDiscount: false,
     discount_value: 0,
-    discount_unit: 'Rp',
+    is_percent: false,
     discount_price: 0,
     variants: [],
   });
@@ -42,7 +43,7 @@ export const useProductService = () => {
     $autoDirty: true,
   });
 
-  const getAllProducts = async (page: number, limit: number, search: string): Promise<IProduct[]> => {
+  const getAllProducts = async (page: number, limit: number, search: string): Promise<IProductResponse> => {
     const response = await axios.get(`${API_URL}/?page=${page}&limit=${limit}&search=${search}`);
     const products: IProduct[] = response.data.data.data.map((item: IProduct) => ({
       id: item.id,
@@ -50,31 +51,34 @@ export const useProductService = () => {
       price: item.price,
       discount_price: item.discountPrice || 0,
       picture_url: item.picture_url || '-',
-      categories: item.categoriesHasProducts?.map((cat: ICategoryHasProduct) => cat.categories.category),
-      variants: item.variantHasProducts?.map((variant: IVariantHasProduct) => variant.variant.name),
+      categoriesHasProducts: item.categoriesHasProducts?.map((cat: ICategoryHasProduct) => cat.categories.category),
+      variantHasProducts: item.variantHasProducts?.map((variant: IVariantHasProduct) => variant.variant.name),
     }));
 
-    const total = response.data.data.total;
+    const lastPage = response.data.data.lastPage;
 
     return {
       products,
-      total,
+      lastPage,
     };
   };
 
   const getProductById = async (id: string): Promise<IProduct> => {
     const response = await axios.get(`${API_URL}/${id}`);
+
+    // console.log('🚀 ~ getProductById ~ response:', response);
     const product = response.data.data;
+    // console.log('🚀 ~ getProductById ~ product:', product);
 
     return {
       id: product.id,
       name: product.name,
       price: product.price,
-      discount_price: product.discount_price || 0,
-      is_percent: product.is_percent,
-      picture_url: product.picture_url || '-',
-      categories: product.categories_has_products.map((item: ICategoryHasProduct) => item.categories) || [],
-      variants: product.variant_has_products?.map((item: IVariantHasProduct) => item.variant) || [],
+      discountPrice: product.discountPrice || 0,
+      isPercent: product.isPercent,
+      picture_url: product.pictureUrl || '-', // ← corrected `pictureUrl`
+      categoriesHasProducts: product.categoriesHasProducts?.map((item: ICategoryHasProduct) => item.categories) || [],
+      variantHasProducts: product.variantHasProducts?.map((item: IVariantHasProduct) => item.variant) || [],
     };
   };
 
@@ -86,14 +90,12 @@ export const useProductService = () => {
   const updateProduct = async (id: string, payload: CreateProductPayload): Promise<IProduct> => {
     const response = await axios.patch(`${API_URL}/${id}`, payload);
     const data: IProduct = response.data.data;
+    console.log("🚀 ~ updateProduct ~ response:", data)
 
     return {
       id: data.id,
       name: data.name,
       price: data.price,
-      discount_price: data.discount_price || 0,
-      picture_url: data.picture_url || '-',
-      categories_has_products: data.categories_has_products || [],
     };
   };
 

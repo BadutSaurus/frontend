@@ -287,11 +287,6 @@ const handleAddCategory = async () => {
     alert('Something went wrong while creating the category.');
   }
 };
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Open the add category dialog and reset the form values.
- */
-/*******  458cf176-94a8-4f82-81f2-b528e74bbdd3  *******/
 
 const openAddDialog = () => {
   isAddOpen.value = true;

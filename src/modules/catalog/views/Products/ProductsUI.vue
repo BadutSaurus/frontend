@@ -7,8 +7,6 @@
         :value="products"
         :rows="limit"
         :filters="filters"
-        :first="(page - 1) * limit"
-        :total-records="total"
         data-key="ID"
         paginator
         :loading="loading"
@@ -20,13 +18,12 @@
               <h1 class="text-2xl font-bold">Products</h1>
             </div>
             <div class="flex gap-4 justify-end">
+              <form @submit.prevent="handleSearch">
               <PrimeVueIconField>
-                <PrimeVueInputIcon>
-                  <i class="pi pi-search" />
-                </PrimeVueInputIcon>
-                <!-- <PrimeVueInputText v-model="filters['global'].value" placeholder="Keyword Search" /> -->
+                <PrimeVueInputIcon><i class="pi pi-search" /></PrimeVueInputIcon>
                 <PrimeVueInputText v-model="search" placeholder="Keyword Search" />
               </PrimeVueIconField>
+            </form>
 
               <router-link to="/catalog/products/add-product">
                 <PrimeVueButton
@@ -48,12 +45,12 @@
         <PrimeVueColumn sortable field="name" header="Name" style="width: 30%"></PrimeVueColumn>
         <PrimeVueColumn sortable field="categories" header="Category" style="width: 14%">
           <template #body="{ data }">
-            <CategoryPill :categories="data.categories" />
+            <CategoryPill :categories="data.categoriesHasProducts" />
           </template>
         </PrimeVueColumn>
         <PrimeVueColumn sortable field="variants" header="Variants" style="width: 20%">
           <template #body="{ data }">
-            <ProductVariantPill :variants="data.variants" />
+          <ProductVariantPill :variants="data.variantHasProducts" />
           </template>
         </PrimeVueColumn>
 
@@ -78,42 +75,40 @@
           </template>
         </PrimeVueColumn>
 
-        <template #paginatorcontainer="{ page, pageCount, prevPageCallback, nextPageCallback }">
-          <div class="flex items-center gap-2 justify-between w-full py-2">
-            <!-- Previous Page Button -->
-            <PrimeVueButton
-              icon="pi pi-angle-left"
-              variant="text"
-              label="Previous"
-              class="border border-primary text-primary hover:bg-transparent"
-              :disabled="page === 1"
-              @click="prevPageCallback"
-            />
+        <template #paginatorcontainer="{}">
+        <div class="flex items-center gap-2 justify-between w-full py-2">
+          <!-- Previous Page Button -->
+          <PrimeVueButton
+            icon="pi pi-angle-left"
+            variant="text"
+            label="Previous"
+            class="border border-primary text-primary hover:bg-transparent"
+            @click="prevPage()"
+          />
 
-            <!-- Page Numbers -->
-            <div class="flex gap-1">
-              <PrimeVueButton
-                v-for="p in pageCount"
-                :key="p"
-                :label="p.toString()"
-                class="border-none aspect-square p-4"
-                :class="
-                  page === p ? 'bg-blue-secondary-background text-primary' : 'bg-transparent text-grayscale-20'
-                "
-                @click="$emit('page', { first: (p - 1) * rowsPerPage, page: p, pageCount, rows: rowsPerPage })"
-              />
-            </div>
-
-            <!-- Next Page Button -->
+          <div class="flex gap-1">
             <PrimeVueButton
-              icon="pi pi-angle-right"
-              variant="text"
-              label="Next"
-              class="border border-primary text-primary hover:bg-transparent flex-row-reverse"
-              :disabled="page === pageCount"
-              @click="nextPageCallback"
+              v-for="p in lastPage"
+              :key="p"
+              :label="p.toString()"
+              class="border-none aspect-square p-4"
+              :class="
+                page === p ? 'bg-blue-secondary-background text-primary' : 'bg-transparent text-grayscale-20'
+              "
+              @click="goToPage(p)"
             />
           </div>
+          <!-- Page Numbers -->
+
+          <!-- Next Page Button -->
+          <PrimeVueButton
+            icon="pi pi-angle-right"
+            variant="text"
+            label="Next"
+            class="border border-primary text-primary hover:bg-transparent flex-row-reverse"
+            @click="nextPage()"
+          />
+        </div>
       </template>
       </PrimeVueDataTable>
 
@@ -175,15 +170,15 @@ import ProductVariantPill from '../../components/ProductVariantPill.vue';
 import { useProductService } from '@/modules/catalog/services/Product/ProductServices';
 import CategoryPill from '@/modules/catalog/components/Category/CategoryPill.vue';
 
+const { getAllProducts, deleteProduct } = useProductService();
+
 const route = useRoute();
 const router = useRouter();
 
-const { getAllProducts, deleteProduct } = useProductService();
-
-const page = ref(parseInt(route.query.page) || 1);
-const limit = ref(5);
+const page = ref(1);
+const limit = ref(10);
 const search = ref('');
-const total = ref(1);
+const lastPage = ref(0);
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' })
@@ -216,15 +211,16 @@ const filters = ref({
 const selectedProducts = ref([]);
 const loading = ref(false);
 const products = ref([]);
+
+
 const loadProducts = async () => {
   loading.value = true;
   try {
     const response = await getAllProducts(page.value, limit.value, search.value);
     products.value = response.products;
-    total.value = response.total;
-    console.log('🚀 ~ loadProducts ~ total.value:', total.value);
-    console.log('🚀 ~ loadProducts ~ page.value:', page.value);
-    console.log('products', products.value);
+    lastPage.value = response.lastPage;
+    // console.log('🚀 ~ loadProducts ~ lastPage.value:', lastPage.value);
+    // console.log('products', products.value);
   } catch (err) {
     console.error('Failed to fetch products:', err);
   } finally {
@@ -248,11 +244,39 @@ const onPageChange = event => {
   loadProducts();
 };
 
-onMounted(() => {
-  if (!route.query.page) {
-    router.push({ query: { page: '1' } });
-  }
-  page.value = parseInt(route.query.pages) || 2;
+const handleSearch = () => {
+  router.push({ query: { page: '1' } });
+  page.value = 1;
   loadProducts();
+}
+
+function goToPage(p) {
+  router.push({ query: { page: p.toString() } });
+  page.value = p;
+  loadProducts();
+}
+
+const nextPage = () => {
+  if (page.value < lastPage.value) {
+    page.value = page.value + 1;
+    router.push({ query: { page: page.value.toString() } });
+    loadProducts();
+  }
+};
+
+const prevPage = () => {
+  if (page.value > 1) {
+    page.value = page.value - 1;
+    router.push({ query: { page: page.value.toString() } });
+    loadProducts();
+  }
+};
+
+onMounted(() => {
+  loadProducts();
+  page.value = parseInt(route.query.page) || 1;
+    if (!route.query.page) {
+      router.push({ query: { page: '1' } });
+    }
 });
 </script>

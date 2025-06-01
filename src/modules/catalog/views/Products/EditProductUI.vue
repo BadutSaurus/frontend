@@ -3,12 +3,13 @@
     <div class="flex flex-col gap-4">
       <h1 class="text-2xl font-bold">Products Detail</h1>
       <h2 class="text-xl font-semibold">Product Information</h2>
-      {{ product_formData }}
+
+
       <form class="flex flex-col items-center justify-center" @submit.prevent="handleUpdateProduct">
         <p>Photo (Optional)</p>
         <img
           class="rounded-lg mt-2 w-64 h-64 object-cover"
-          :src="previewImage || 'https://placehold.co/250'"
+          :src="product_formData.image || 'https://placehold.co/250'"
           alt="Photo"
         />
 
@@ -116,19 +117,20 @@
                     v-model="product_formData.discount_value"
                     class="w-full"
                     name="discount_value"
-                    :prefix="product_formData.discount_unit === 'Rp' ? 'Rp ' : ''"
-                    :suffix="product_formData.discount_unit === '%' ? ' %' : ''"
+                    :prefix="product_formData.is_percent === false ? 'Rp ' : ''"
+                    :suffix="product_formData.is_percent === true ? ' %' : ''"
                     :class="classes ? '' : ''"
-                    @change="calculateDiscount"
+                    @update:modelValue="calculateDiscount"
                     v-on="useListenerForm(product_formValidations, 'discount_value')"
                   />
                   <div class="absolute right-0 flex items-center rounded-lg border-none ring-0">
                     <PrimeVueSelect
-                      v-model="product_formData.discount_unit"
+                      v-model="discount_unit"
                       :options="['Rp', '%']"
                       class="border-none bg-transparent"
                       dropdown-icon="pi pi-circle"
                       @update:modelValue="calculateDiscount"
+                      @change="calculateDiscount"
                     >
                       <template #option="{ option }">
                         {{ option }}
@@ -284,55 +286,63 @@ const route = useRoute();
 const { getAllCategories } = useCategoryService();
 const { getProductById, updateProduct, product_formData, product_formValidations } = useProductService();
 
-function clearForm() {
-  product_formData.name = '';
-  product_formData.price = 0;
-  product_formData.isDiscount = true;
-  product_formData.discount_value = 0;
-  product_formData.discount_unit = 'Rp';
-  product_formData.discount_price = 0;
-  product_formData.variants = [];
-  product_formData.category = [];
-}
-
 const toggleVariant = ref(false);
 const categories = ref([]);
 const productID = ref(route.params.id);
+function clearForm() {
+  product_formData.name = '';
+  product_formData.price = 0;
+  product_formData.isDiscount = false;
+  product_formData.discount_value = 0;
+  product_formData.is_percent = false;
+  product_formData.discount_price = 0;
+  product_formData.variants = [];
+  product_formData.categories = [];
+  toggleVariant.value = false;
+  product_formValidations.value.$reset();
+}
+
 const loadCategories = async () => {
   try {
-    const response = await getAllCategories();
-    categories.value = response;
+    const response = await getAllCategories(1, 100, '');
+    categories.value = response.categories;
   } catch (error) {
     console.error('Failed to load categories:', error);
   }
 };
+
+const discount_unit = ref('Rp');
+
 const loadProduct = async () => {
   try {
     const response = await getProductById(route.params.id);
-    console.log('🚀 ~ loadProduct ~ getProductById:', response);
+    // console.log('🚀 ~ loadProduct ~ getProductById:', response);
     product_formData.name = response.name;
     product_formData.price = response.price;
-    product_formData.discount_price = response.discount_price;
-    product_formData.isDiscount = response.discount_price > 0;
-    product_formData.variants = response.variants;
-    product_formData.categories = response.categories;
+    product_formData.discount_price = response.discountPrice;
+    product_formData.isDiscount = response.discountPrice > 0;
+    product_formData.variants = response.variantHasProducts;
+    product_formData.categories = response.categoriesHasProducts;
+    product_formData.is_percent = response.isPercent;
 
-    if (response.is_percentage) {
-      product_formData.discount_value = (response.discount_price / response.price) * 100;
-    } else {
-      product_formData.discount_value = response.price - response.discount_price;
-    }
+    if (product_formData.isDiscount) {
+      if (response.isPercent) {
+        product_formData.discount_value = 100 - (response.discountPrice / response.price) * 100;
+        discount_unit.value = '%';
+      } else {
+        product_formData.discount_value = response.price - response.discountPrice;
+        discount_unit.value = 'Rp';
+      }
 
-    product_formData.discount_unit = response.is_percentage ? '%' : 'Rp';
-    if (response.variants.length > 0) {
-      toggleVariant.value = true;
+      if (product_formData.variants.length > 0) {
+        toggleVariant.value = true;
+      }
     }
   } catch (error) {
     console.error(error);
   }
 };
 
-const previewImage = ref(null);
 const fileInput = ref(null);
 
 const triggerFileInput = () => {
@@ -352,7 +362,7 @@ const handleImageUpload = event => {
 
 const handleUpdateProduct = async () => {
   try {
-    await updateProduct(productID, product_formData);
+    await updateProduct(productID.value, product_formData);
   } catch (error) {
     console.error(error);
   } finally {
@@ -377,11 +387,13 @@ const calculateDiscount = () => {
   }
 
   if (product_formData.isDiscount) {
-    if (product_formData.discount_unit === 'Rp') {
+    if (discount_unit.value === 'Rp') {
+      product_formData.is_percent = false;
       product_formData.discount_price = product_formData.price - product_formData.discount_value;
     } else {
       product_formData.discount_price =
         product_formData.price - (product_formData.price * product_formData.discount_value) / 100;
+      product_formData.is_percent = true;
     }
   }
 };
@@ -428,10 +440,6 @@ onBeforeRouteLeave((to, from, next) => {
     nextRoute.value = to.fullPath;
     next(false);
   }
-});
-
-watch(product_formData, () => {
-  calculateDiscount();
 });
 </script>
 
