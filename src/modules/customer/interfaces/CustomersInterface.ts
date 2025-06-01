@@ -1,3 +1,14 @@
+export interface ITag {
+  id: string;
+  name: string;
+}
+
+export interface ICustomersHasTag {
+  customerId: string;
+  name: string;
+  tag: ITag
+}
+
 export interface ICustomer {
   id: string;
   name: string;
@@ -7,7 +18,11 @@ export interface ICustomer {
   email: string;
   username: string;
   address: string;
+  points: number;
+  latestVisit: string;
+  customersHasTag: ICustomersHasTag[];
 }
+
 
 export interface ICustomerFormData {
   name: string;

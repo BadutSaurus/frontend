@@ -22,7 +22,7 @@ export const useCustomerService = () => {
   const customer_formRules = computed(() => ({
     name: { required },
     email: { required, email },
-    number: { required, numeric, minLength: minLength(10), maxLength: maxLength(11)},
+    number: { required, numeric, minLength: minLength(10), maxLength: maxLength(11) },
     id: { required, minLength: minLength(16), maxLength: maxLength(16) },
     address: { required },
     tags: { required },
@@ -37,16 +37,21 @@ export const useCustomerService = () => {
 
   const getAllCustomers = async (): Promise<ICustomer[]> => {
     const response = await axios.get(API_URL);
-    const customers: ICustomer[] = response.data.data;
-    console.log(response);
-    return customers.map(item => ({
+    const customers: ICustomer[] = response.data.data.data;
+    console.log('🚀 ~ getAllCustomers ~ customers:', customers);
+
+    return customers.map((item: ICustomer) => ({
       id: item.id,
       name: item.name,
       email: item.email,
       code: item.code,
-      phone: item.number || '-',
+      number: item.number || '-',
       points: item.points || 0,
       latestVisit: item.latestVisit || '-',
+      customersHasTag: item.customersHasTag,
+      username: item.username,
+      address: item.address,
+      dob: item.dob,
     }));
   };
 

@@ -36,9 +36,9 @@
       <template #loading>Loading categories data. Please wait.</template>
 
       <PrimeVueColumn selection-mode="multiple" header-style="width: 3rem" />
-      <PrimeVueColumn sortable field="id" header="Category ID" style="width: 25%" />
-      <PrimeVueColumn sortable field="category" header="Category" style="width: 25%" />
-      <PrimeVueColumn sortable field="description" header="Description" style="width: 25%" />
+      <!-- <PrimeVueColumn sortable field="id" header="Category ID" style="width: 25%" /> -->
+      <PrimeVueColumn sortable field="category" header="Category"  />
+      <PrimeVueColumn sortable field="description" header="Description"  />
       <PrimeVueColumn>
         <template #body="slotProps">
           <PrimeVueButton

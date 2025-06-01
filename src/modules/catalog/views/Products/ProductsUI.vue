@@ -41,25 +41,25 @@
         <template #loading> Loading products data. Please wait. </template>
 
         <PrimeVueColumn selection-mode="multiple" header-style="width: 3rem"></PrimeVueColumn>
-        <PrimeVueColumn sortable field="id" header="Product ID" style="width: 10%"></PrimeVueColumn>
+        <!-- <PrimeVueColumn sortable field="id" header="Product ID" style="width: 10%"></PrimeVueColumn> -->
         <PrimeVueColumn sortable field="name" header="Name" style="width: 30%"></PrimeVueColumn>
-        <PrimeVueColumn sortable field="categories" header="Category" style="width: 14%">
+        <PrimeVueColumn sortable field="categories" header="Category" style="width: 15%">
           <template #body="{ data }">
             <CategoryPill :categories="data.categoriesHasProducts" />
           </template>
         </PrimeVueColumn>
-        <PrimeVueColumn sortable field="variants" header="Variants" style="width: 20%">
+        <PrimeVueColumn sortable field="variants" header="Variants" style="width: 35%">
           <template #body="{ data }">
           <ProductVariantPill :variants="data.variantHasProducts" />
           </template>
         </PrimeVueColumn>
 
-        <PrimeVueColumn sortable field="price" header="Price" style="width: 30%">
+        <PrimeVueColumn sortable field="price" header="Price" style="width: 15%">
           <template #body="{ data }">
             {{ formatCurrency(data.price) }}
           </template>
         </PrimeVueColumn>
-        <PrimeVueColumn sortable field="discount_price" header="Discount Price" style="width: 30%">
+        <PrimeVueColumn sortable field="discount_price" header="Discount Price" style="width: 15%">
           <template #body="{ data }">
             {{ formatCurrency(data.discount_price) }}
           </template>

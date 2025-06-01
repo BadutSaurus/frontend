@@ -1,6 +1,6 @@
 <template>
   <div class="m-4 p-1 border border-gray rounded-lg shadow-2xl">
-    <!-- {{ customers }} -->
+    {{ customers[0] }}
     <div>
       <PrimeVueDataTable
         :selection="selectedCustomer"
@@ -46,7 +46,11 @@
         <PrimeVueColumn sortable field="id" header="Member ID" style="width: 15%"></PrimeVueColumn>
         <PrimeVueColumn sortable field="name" header="Customer Name" style="width: 15%"></PrimeVueColumn>
         <PrimeVueColumn sortable field="email" header="Email" style="width: 15%"></PrimeVueColumn>
-        <PrimeVueColumn sortable field="phone" header="Phone Number" style="width: 15%"></PrimeVueColumn>
+        <PrimeVueColumn sortable field="phone" header="Phone Number" style="width: 15%">
+          <template #body="{ data }">
+            ({{ data.code }}) {{ data.number }} 
+          </template>
+        </PrimeVueColumn>
         <PrimeVueColumn sortable field="points" header="Loyalty Point" style="width: 15%">
           <template #body="{ data }">
             <div class="flex gap-2">
@@ -212,15 +216,6 @@ const loadCustomers = async () => {
   isLoading.value = true;
   try {
     customers.value = await getAllCustomers();
-    customers.value.map(item => ({
-      id: item.id,
-      name: item.name,
-      email: item.email,
-      code: item.code,
-      phone: `(${item.code}) ` + item.phone,
-      points: item.points,
-      latestVisit: item.latestVisit,
-    }));
   } catch (error) {
     console.error('Failed to fetch customers:', error);
   } finally {
@@ -230,7 +225,6 @@ const loadCustomers = async () => {
 
 onMounted(() => {
   loadCustomers();
-  console.log('customers', customers.value);
 });
 </script>
 
