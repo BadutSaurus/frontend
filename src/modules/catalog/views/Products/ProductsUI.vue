@@ -86,17 +86,12 @@
               variant="text"
               label="Previous"
               class="border border-primary text-primary hover:bg-transparent"
-              @click="
-                () => {
-                  page--;
-                  loadProducts();
-                }
-              "
+              :disabled="page === 1"
+              @click="prevPageCallback"
             />
 
             <!-- Page Numbers -->
-            <div>
-              {{ pageCount }}
+            <div class="flex gap-1">
               <PrimeVueButton
                 v-for="p in pageCount"
                 :key="p"
@@ -105,12 +100,7 @@
                 :class="
                   page === p ? 'bg-blue-secondary-background text-primary' : 'bg-transparent text-grayscale-20'
                 "
-                @click="
-                  () => {
-                    page = p;
-                    loadProducts();
-                  }
-                "
+                @click="$emit('page', { first: (p - 1) * rowsPerPage, page: p, pageCount, rows: rowsPerPage })"
               />
             </div>
 
@@ -120,15 +110,11 @@
               variant="text"
               label="Next"
               class="border border-primary text-primary hover:bg-transparent flex-row-reverse"
-              @click="
-                () => {
-                  page++;
-                  loadProducts();
-                }
-              "
+              :disabled="page === pageCount"
+              @click="nextPageCallback"
             />
           </div>
-        </template>
+      </template>
       </PrimeVueDataTable>
 
       <PrimeVuePopover ref="op">
@@ -152,30 +138,30 @@
 
       <PrimeVueDialog v-model:visible="isDeleteOpen" modal header="">
         <template #container>
-          <div class="w-[35rem] p-8">
-            <div class="flex flex-col items-center gap-4 text-center">
-              <span><i class="pi pi-trash" style="font-size: 2.5rem"></i></span>
-              <h1 class="text-2xl font-semibold">Are you sure you want to delete this product?</h1>
-              <p>This action cannot be undone, and the product will be removed from catalog</p>
-              <div class="flex items-center justify-between gap-4">
-                <PrimeVueButton
-                  class="text-lg w-56"
-                  variant="outlined"
-                  icon="pi pi-trash"
-                  label="Delete Product"
-                  severity="danger"
-                  @click="
-                    handleDelete(selectedProduct.id);
-                    isDeleteOpen = false;
-                  "
-                />
-                <PrimeVueButton class="w-56 text-lg bg-primary border-primary" @click="isDeleteOpen = false"
-                  >Cancel</PrimeVueButton
-                >
-              </div>
-            </div>
-          </div>
-        </template>
+  <div class="w-[35rem] p-8">
+    <div class="flex flex-col items-center gap-4 text-center">
+      <span><i class="pi pi-trash" style="font-size: 2.5rem"></i></span>
+      <h1 class="text-2xl font-semibold">Are you sure you want to delete this product?</h1>
+      <p>This action cannot be undone, and the product will be removed from catalog</p>
+      <div class="flex items-center justify-between gap-4">
+        <PrimeVueButton
+          class="text-lg w-56"
+          variant="outlined"
+          icon="pi pi-trash"
+          label="Delete Product"
+          severity="danger"
+          @click="
+            handleDelete(selectedProduct.id);
+            isDeleteOpen = false;
+          "
+        />
+        <PrimeVueButton class="w-56 text-lg bg-primary border-primary" @click="isDeleteOpen = false"
+          >Cancel</PrimeVueButton
+        >
+      </div>
+    </div>
+  </div>
+</template>
       </PrimeVueDialog>
     </div>
   </div>
@@ -257,16 +243,16 @@ const handleDelete = async () => {
   }
 };
 
-const onPageChange = (event) => {
+const onPageChange = event => {
   page.value = event.page + 1; // event.page is 0-based
   loadProducts();
 };
 
 onMounted(() => {
-  if(!route.query.page) {
+  if (!route.query.page) {
     router.push({ query: { page: '1' } });
   }
-  page.value = parseInt(route.query.pages) || 2;  
+  page.value = parseInt(route.query.pages) || 2;
   loadProducts();
 });
 </script>

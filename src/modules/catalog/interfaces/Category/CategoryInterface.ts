@@ -13,3 +13,8 @@ export interface ICategoryFormData {
   name: string;
   description: string;
 }
+
+export interface ICategoryResponse{
+  categories: ICategory[],
+  lastPage: number
+}

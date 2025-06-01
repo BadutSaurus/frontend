@@ -4,7 +4,7 @@
       :selection="selectedCategories"
       :value="categories"
       paginator
-      :rows="10"
+      :rows="limit"
       table-style="min-width: 50rem"
       :filters="filters"
       data-key="id"
@@ -14,10 +14,12 @@
         <div class="flex justify-between">
           <h1 class="text-2xl font-bold">Categories</h1>
           <div class="flex gap-4">
-            <PrimeVueIconField>
-              <PrimeVueInputIcon><i class="pi pi-search" /></PrimeVueInputIcon>
-              <PrimeVueInputText v-model="filters['global'].value" placeholder="Keyword Search" />
-            </PrimeVueIconField>
+            <form @submit.prevent="handleSearch">
+              <PrimeVueIconField>
+                <PrimeVueInputIcon><i class="pi pi-search" /></PrimeVueInputIcon>
+                <PrimeVueInputText v-model="search" placeholder="Keyword Search" />
+              </PrimeVueIconField>
+            </form>
             <PrimeVueButton
               type="button"
               severity="info"
@@ -46,7 +48,7 @@
           />
         </template>
       </PrimeVueColumn>
-      <template #paginatorcontainer="{ page, pageCount, prevPageCallback, nextPageCallback }">
+      <template #paginatorcontainer="{}">
         <div class="flex items-center gap-2 justify-between w-full py-2">
           <!-- Previous Page Button -->
           <PrimeVueButton
@@ -54,18 +56,19 @@
             variant="text"
             label="Previous"
             class="border border-primary text-primary hover:bg-transparent"
-            @click="prevPageCallback"
+            @click="prevPage()"
           />
 
-          <div>
+          <div class="flex gap-1">
             <PrimeVueButton
-              v-for="p in pageCount"
+              v-for="p in lastPage"
               :key="p"
               :label="p.toString()"
               class="border-none aspect-square p-4"
               :class="
-                page === p - 1 ? 'bg-blue-secondary-background text-primary' : 'bg-transparent text-grayscale-20'
+                page === p ? 'bg-blue-secondary-background text-primary' : 'bg-transparent text-grayscale-20'
               "
+              @click="goToPage(p)"
             />
           </div>
           <!-- Page Numbers -->
@@ -76,7 +79,7 @@
             variant="text"
             label="Next"
             class="border border-primary text-primary hover:bg-transparent flex-row-reverse"
-            @click="nextPageCallback"
+            @click="nextPage()"
           />
         </div>
       </template>
@@ -134,7 +137,10 @@
             severity="info"
             variant="outlined"
             class="w-48"
-            @click="isAddOpen = false"
+            @click="
+              isAddOpen = false;
+              resetForm();
+            "
           />
           <PrimeVueButton label="Add" class="w-48 bg-primary border-primary" type="submit" />
         </div>
@@ -173,7 +179,10 @@
             severity="info"
             variant="outlined"
             class="w-48"
-            @click="isEditOpen = false"
+            @click="
+              isEditOpen = false;
+              resetForm();
+            "
           />
           <PrimeVueButton label="Edit" class="w-48 bg-primary border-primary" type="submit" />
         </div>
@@ -220,6 +229,14 @@ const categories = ref<ICategory[]>([]);
 const selected = ref<ICategory | null>(null);
 const loading = ref(false);
 
+const route = useRoute();
+const router = useRouter();
+
+const page = ref(1);
+const limit = ref(10);
+const search = ref('');
+const lastPage = ref(0);
+
 // const category = ref('');
 // const description = ref('');
 const op = ref();
@@ -231,18 +248,25 @@ const filters = ref({
 const loadCategories = async () => {
   loading.value = true;
   try {
-    categories.value = await getAllCategories();
-    console.log(categories.value);
+    const response = await getAllCategories(page.value, limit.value, search.value);
+    categories.value = response.categories;
+    console.log('🚀 ~ loadCategories ~ categories.value:', categories.value);
+    lastPage.value = response.lastPage;
+    console.log('🚀 ~ loadCategories ~ lastPage.value:', lastPage.value);
   } catch (err) {
     console.error('Failed to fetch categories:', err);
   } finally {
     loading.value = false;
   }
 };
+function resetForm() {
+  category_formData.name = '';
+  category_formData.description = '';
+  category_formValidations.value.$reset();
+}
 const handleAddCategory = async () => {
-  
-
-
+  category_formValidations.value.$touch();
+  if (category_formValidations.value.$invalid) return;
   try {
     const newCategory = await createCategory({
       category: category_formData.name,
@@ -253,16 +277,22 @@ const handleAddCategory = async () => {
     isAddOpen.value = false;
     category_formData.name = '';
     category_formData.description = '';
-
     if (newCategory.statusCode === 500) {
       alert(`${newCategory.message}`);
     }
+    resetForm();
   } catch (error) {
     console.error('Failed to create category:', error);
     console.error(error);
     alert('Something went wrong while creating the category.');
   }
 };
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Open the add category dialog and reset the form values.
+ */
+/*******  458cf176-94a8-4f82-81f2-b528e74bbdd3  *******/
+
 const openAddDialog = () => {
   isAddOpen.value = true;
   category_formData.name = '';
@@ -284,6 +314,8 @@ const displayEdit = () => {
 };
 
 const handleEditCategory = async () => {
+  category_formValidations.value.$touch();
+  if (category_formValidations.value.$invalid) return;
   if (selected.value) {
     try {
       const updatedCategory = await updateCategory(selected.value.id, {
@@ -292,19 +324,13 @@ const handleEditCategory = async () => {
       });
       categories.value = categories.value.map(cat => (cat.id === updatedCategory.id ? updatedCategory : cat));
       isEditOpen.value = false;
+      resetForm();
     } catch (error) {
       console.error('Failed to update category:', error);
       alert('Something went wrong while updating the category.');
     }
   }
 };
-
-/**
- * @description Deletes the currently selected category.
- * If the category is successfully deleted, it removes the category from the list
- * and displays a success alert. Otherwise, it shows an error alert.
- * It also handles any errors encountered during the deletion process.
- */
 
 const handleDeleteCategory = async () => {
   try {
@@ -324,7 +350,39 @@ const handleDeleteCategory = async () => {
   isDeleteOpen.value = false;
 };
 
+const handleSearch = () => {
+  router.push({ query: { page: '1' } });
+  page.value = 1;
+  loadCategories();
+}
+
+function goToPage(p: number) {
+  router.push({ query: { page: p.toString() } });
+  page.value = p;
+  loadCategories();
+}
+
+const nextPage = () => {
+  if (page.value < lastPage.value) {
+    page.value = page.value + 1;
+    router.push({ query: { page: page.value.toString() } });
+    loadCategories();
+  }
+};
+
+const prevPage = () => {
+  if (page.value > 1) {
+    page.value = page.value - 1;
+    router.push({ query: { page: page.value.toString() } });
+    loadCategories();
+  }
+};
+
 onMounted(() => {
   loadCategories();
+  page.value = parseInt(route.query.page) || 1;
+  if (!route.query.page) {
+    router.push({ query: { page: '1' } });
+  }
 });
 </script>
